@@ -52,6 +52,7 @@ public class RssContentProvider extends ContentProvider {
                     " title TEXT NOT NULL, " +
                     " content TEXT NOT NULL, " +
                     " author TEXT NOT NULL, " +
+                    " hash TEXT NOT NULL, " +
                     " published TEXT NOT NULL, " +
                     " updated TEXT NOT NULL);";
 
@@ -78,14 +79,25 @@ public class RssContentProvider extends ContentProvider {
     }
 
     public void insertRssFeedEntryToDB(RssFeedEntry rssFeedEntry) {
-        ContentValues values = new ContentValues();
-
-        values.put("title", rssFeedEntry.getTitle());
-        values.put("content", rssFeedEntry.getContent());
-        values.put("author", rssFeedEntry.getAuthor().getName());
-        values.put("published", rssFeedEntry.getPublished());
-        values.put("updated", rssFeedEntry.getUpdated());
-        db.insert(RSS_TABLE_NAME, null, values);
+        SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
+        qb.setTables(RSS_TABLE_NAME);
+        qb.appendWhere(  "hash = ");
+        qb.appendWhereEscapeString(rssFeedEntry.getHash());
+        Cursor c = qb.query(db,	null,	null,
+                null,null, null, null);
+        /**
+         * Only insert if the feed with the same hash not found in the database
+         */
+        if (c.getCount() == 0) {
+            ContentValues values = new ContentValues();
+            values.put("title", rssFeedEntry.getTitle());
+            values.put("content", rssFeedEntry.getContent());
+            values.put("author", rssFeedEntry.getAuthor().getName());
+            values.put("hash", rssFeedEntry.getHash());
+            values.put("published", rssFeedEntry.getPublished());
+            values.put("updated", rssFeedEntry.getUpdated());
+            db.insert(RSS_TABLE_NAME, null, values);
+        }
     }
 
     @Override
@@ -98,23 +110,23 @@ public class RssContentProvider extends ContentProvider {
          * creation if it doesn't already exist.
          */
         db = dbHelper.getWritableDatabase();
+        rssFeedHelper.delegate = this;
 
-        if (db != null) {
-            rssFeedHelper.delegate = this;
-            rssFeedHelper.execute(MAIN_ARTICLE_URL);
-            //rssFeedHelper.execute(RECOMMENDED_ARTICLE_URL);
-        }
         return (db == null)? false:true;
     }
 
     @Override
     public Cursor query(Uri uri, String[] projection,
-                        String selection,String[] selectionArgs, String sortOrder) {
+                        String selection, String[] selectionArgs, String sortOrder) {
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         qb.setTables(RSS_TABLE_NAME);
 
         switch (uriMatcher.match(uri)) {
             case RSS_ALL:
+                if (db != null) {
+                    rssFeedHelper.execute(MAIN_ARTICLE_URL);
+                    //rssFeedHelper.execute(RECOMMENDED_ARTICLE_URL);
+                }
                 qb.setProjectionMap(RSS_PROJECTION_MAP);
                 break;
 

@@ -5,6 +5,16 @@ public class RssFeedEntry {
     private String updated;
     private String title;
     private String content;
+    private String hash;
+
+    public String getHash() {
+        return hash;
+    }
+
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
+
     private RssFeedAuthor author;
 
     public String getUpdated() {
@@ -61,9 +71,11 @@ public class RssFeedEntry {
             case "content":
                 this.setContent(value);
                 break;
+            case "id":
+                this.setHash(value);
+                break;
             default:
                 break;
-
         }
     }
 }
