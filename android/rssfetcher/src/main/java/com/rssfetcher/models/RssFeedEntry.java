@@ -1,13 +1,22 @@
-package com.rssfetcher;
+package com.rssfetcher.models;
 
 public class RssFeedEntry {
     private String published;
     private String updated;
     private String title;
     private String content;
+    private RssFeedAuthor author;
 
     public String getUpdated() {
         return updated;
+    }
+
+    public RssFeedAuthor getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(RssFeedAuthor author) {
+        this.author = author;
     }
 
     public void setUpdated(String updated) {

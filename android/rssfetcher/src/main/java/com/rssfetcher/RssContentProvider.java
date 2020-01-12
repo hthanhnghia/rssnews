@@ -13,6 +13,8 @@ import android.net.Uri;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.rssfetcher.models.RssFeedEntry;
+
 import java.util.HashMap;
 
 public class RssContentProvider extends ContentProvider {
@@ -49,6 +51,7 @@ public class RssContentProvider extends ContentProvider {
                     " (id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     " title TEXT NOT NULL, " +
                     " content TEXT NOT NULL, " +
+                    " author TEXT NOT NULL, " +
                     " published TEXT NOT NULL, " +
                     " updated TEXT NOT NULL);";
 
@@ -76,8 +79,10 @@ public class RssContentProvider extends ContentProvider {
 
     public void insertRssFeedEntryToDB(RssFeedEntry rssFeedEntry) {
         ContentValues values = new ContentValues();
+
         values.put("title", rssFeedEntry.getTitle());
         values.put("content", rssFeedEntry.getContent());
+        values.put("author", rssFeedEntry.getAuthor().getName());
         values.put("published", rssFeedEntry.getPublished());
         values.put("updated", rssFeedEntry.getUpdated());
         db.insert(RSS_TABLE_NAME, null, values);

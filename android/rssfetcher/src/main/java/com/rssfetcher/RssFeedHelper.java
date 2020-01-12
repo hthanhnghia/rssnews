@@ -2,6 +2,9 @@ package com.rssfetcher;
 
 import android.os.AsyncTask;
 
+import com.rssfetcher.models.RssFeedAuthor;
+import com.rssfetcher.models.RssFeedEntry;
+
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -10,13 +13,19 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 public class RssFeedHelper extends AsyncTask<String, Void, List<RssFeedEntry>> {
     private List<RssFeedEntry> feedEntries = new ArrayList<>();
     private RssFeedEntry feedEntry;
+    private RssFeedAuthor feedAuthor;
     private String text;
     public RssContentProvider delegate;
+
+    private List<String> rssFeedModelTags = Arrays.asList("entry", "author");
+    private Stack<String> modelTagStack = new Stack<>();
 
     @Override
     protected List<RssFeedEntry> doInBackground(String... strings) {
@@ -36,10 +45,17 @@ public class RssFeedHelper extends AsyncTask<String, Void, List<RssFeedEntry>> {
                 String tagName = parser.getName();
                 switch (eventType) {
                     case XmlPullParser.START_TAG:
-                        if (tagName.equalsIgnoreCase("entry")) {
-                            // create a new instance of employee
-                            feedEntry = new RssFeedEntry();
+                        if (rssFeedModelTags.contains(tagName)) {
+                            if (tagName.equalsIgnoreCase("entry")) {
+                                // create a new instance of feed entry
+                                feedEntry = new RssFeedEntry();
+                            } else if (tagName.equalsIgnoreCase("author")) {
+                                // create a new instance of feed author
+                                feedAuthor = new RssFeedAuthor();
+                            }
+                            modelTagStack.push(tagName);
                         }
+
                         break;
 
                     case XmlPullParser.TEXT:
@@ -50,10 +66,21 @@ public class RssFeedHelper extends AsyncTask<String, Void, List<RssFeedEntry>> {
                         if (tagName.equalsIgnoreCase("entry")) {
                             feedEntries.add(feedEntry);
                             delegate.insertRssFeedEntryToDB(feedEntry);
+                            modelTagStack.pop();
+                        } else if (tagName.equalsIgnoreCase("author")) {
+                            feedEntry.setAuthor(feedAuthor);
+                            modelTagStack.pop();
                         }
+
                         else {
-                            if(feedEntry != null) {
-                                feedEntry.setAttributeValue(tagName, text);
+                            if (modelTagStack.size() > 0) {
+                                String currentModelTag = modelTagStack.peek();
+
+                                if (currentModelTag.equalsIgnoreCase("entry") && feedEntry != null) {
+                                    feedEntry.setAttributeValue(tagName, text);
+                                } else if (currentModelTag.equalsIgnoreCase("author") && feedEntry != null) {
+                                    feedAuthor.setAttributeValue(tagName, text);
+                                }
                             }
                         }
                         break;
