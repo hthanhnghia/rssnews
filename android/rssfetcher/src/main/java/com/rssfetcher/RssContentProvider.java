@@ -24,7 +24,6 @@ public class RssContentProvider extends ContentProvider {
 
     static final String MAIN_ARTICLE_URL = "https://www.polygon.com/rss/index.xml";
     static final String RECOMMENDED_ARTICLE_URL = "https://storage.googleapis.com/singtel-test/polygon.xml";
-    static final RssFeedHelper rssFeedHelper = new RssFeedHelper();
 
     private static HashMap<String, String> RSS_PROJECTION_MAP;
 
@@ -49,6 +48,7 @@ public class RssContentProvider extends ContentProvider {
     static final String CREATE_DB_TABLE =
             " CREATE TABLE " + RSS_TABLE_NAME +
                     " (id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    " feed_type TEXT NOT NULL, " +
                     " title TEXT NOT NULL, " +
                     " content TEXT NOT NULL, " +
                     " author TEXT NOT NULL, " +
@@ -78,7 +78,7 @@ public class RssContentProvider extends ContentProvider {
         }
     }
 
-    public void insertRssFeedEntryToDB(RssFeedEntry rssFeedEntry) {
+    public void insertRssFeedEntryToDB(RssFeedEntry rssFeedEntry, String feedType) {
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         qb.setTables(RSS_TABLE_NAME);
         qb.appendWhere(  "hash = ");
@@ -90,6 +90,7 @@ public class RssContentProvider extends ContentProvider {
          */
         if (c.getCount() == 0) {
             ContentValues values = new ContentValues();
+            values.put("feed_type", feedType);
             values.put("title", rssFeedEntry.getTitle());
             values.put("content", rssFeedEntry.getContent());
             values.put("author", rssFeedEntry.getAuthor().getName());
@@ -110,7 +111,6 @@ public class RssContentProvider extends ContentProvider {
          * creation if it doesn't already exist.
          */
         db = dbHelper.getWritableDatabase();
-        rssFeedHelper.delegate = this;
 
         return (db == null)? false:true;
     }
@@ -124,8 +124,8 @@ public class RssContentProvider extends ContentProvider {
         switch (uriMatcher.match(uri)) {
             case RSS_ALL:
                 if (db != null) {
-                    rssFeedHelper.execute(MAIN_ARTICLE_URL);
-                    //rssFeedHelper.execute(RECOMMENDED_ARTICLE_URL);
+                    new RssFeedHelper(this).execute(MAIN_ARTICLE_URL, "main");
+                    new RssFeedHelper(this).execute(RECOMMENDED_ARTICLE_URL, "recommended");
                 }
                 qb.setProjectionMap(RSS_PROJECTION_MAP);
                 break;
@@ -169,12 +169,12 @@ public class RssContentProvider extends ContentProvider {
              * Get all rss records
              */
             case RSS_ALL:
-                return "vnd.android.cursor.dir/vnd.example.rss";
+                return "vnd.android.cursor.dir/vnd.rss";
             /**
              * Get a particular rss record
              */
             case RSS_ID:
-                return "vnd.android.cursor.item/vnd.example.rss";
+                return "vnd.android.cursor.item/vnd.rss";
             default:
                 throw new IllegalArgumentException("Unsupported URI: " + uri);
         }

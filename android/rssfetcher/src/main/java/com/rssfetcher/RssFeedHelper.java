@@ -27,10 +27,15 @@ public class RssFeedHelper extends AsyncTask<String, Void, List<RssFeedEntry>> {
     private List<String> rssFeedModelTags = Arrays.asList("entry", "author");
     private Stack<String> modelTagStack = new Stack<>();
 
+    public RssFeedHelper(RssContentProvider delegate) {
+        this.delegate = delegate;
+    }
+
     @Override
     protected List<RssFeedEntry> doInBackground(String... strings) {
         try {
             String rssUrl = strings[0];
+            String feedType = strings[1];
             URL url = new URL(rssUrl);
             InputStream is = url.openStream();
 
@@ -65,7 +70,7 @@ public class RssFeedHelper extends AsyncTask<String, Void, List<RssFeedEntry>> {
                     case XmlPullParser.END_TAG:
                         if (tagName.equalsIgnoreCase("entry")) {
                             feedEntries.add(feedEntry);
-                            delegate.insertRssFeedEntryToDB(feedEntry);
+                            delegate.insertRssFeedEntryToDB(feedEntry, feedType);
                             modelTagStack.pop();
                         } else if (tagName.equalsIgnoreCase("author")) {
                             feedEntry.setAuthor(feedAuthor);
